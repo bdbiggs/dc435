@@ -1,0 +1,14 @@
+cluster.name: cs-prod-logging
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+# If running in docker swarm this setting
+# needs to be set the service name
+discovery.zen.ping.unicast.hosts:
+  - master
+node.master: true
+node.data: false
+node.ingest: false
+node.ml: false
+cluster.remote.connect: false
+xpack.ml.enabled: true
+discovery.zen.minimum_master_nodes: 2

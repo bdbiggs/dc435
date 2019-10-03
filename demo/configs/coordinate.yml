@@ -1,4 +1,4 @@
-cluster.name: cs-prod-logging
+cluster.name: dc435
 node.name: ${HOSTNAME}
 network.host: 0.0.0.0
 discovery.zen.ping.unicast.hosts:

@@ -18,9 +18,9 @@ services:
 #      timeout: 25s
 #      retries: 3
 #      start_period: 45s
-    environment:
+#    environment:
 #      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
+#      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
     ulimits:
       memlock:
         soft: -1
@@ -33,9 +33,9 @@ services:
         target: /usr/share/elasticsearch/config/elasticsearch.yml
     deploy:
       replicas: 3
-      resources:
-        reservations:
-          memory: 2G
+#      resources:
+#        reservations:
+#          memory: 2G
       update_config:
         parallelism: 1
         delay: 10s
@@ -56,17 +56,17 @@ services:
   elasticsearch:
     image: elasticsearch:6.8.1
     environment:
-      - "ES_JAVA_OPTS=-Xmx2g -Xms2g"
+      - "ES_JAVA_OPTS=-Xmx1g -Xms1g"
     networks:
       - esnet
     configs:
       - source: coord_config
         target: /usr/share/elasticsearch/config/elasticsearch.yml
     deploy:
-      replicas: 3
-      resources:
-        reservations:
-          memory: 2g
+      replicas: 1
+#      resources:
+#        reservations:
+#          memory: 2g
       update_config:
         parallelism: 1
         delay: 10s 
@@ -94,7 +94,8 @@ services:
 #    env_file: env/es_hot.env
     environment:
 #      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms28g -Xmx28g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+#      - "ES_JAVA_OPTS=-Xms28g -Xmx28g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
     volumes:
       - esdata01:/usr/share/elasticsearch/data
     networks:
@@ -107,15 +108,15 @@ services:
       endpoint_mode: dnsrr
       mode: "replicated"
       placement:
-         constraints: [node.hostname == es-02]
+         constraints: [node.hostname == vm2]
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
-      resources:
-        limits:
-          memory: 64G
+#      resources:
+#        limits:
+#          memory: 64G
   data02:
     image: elasticsearch:6.8.1
     container_name: esdata02
@@ -128,7 +129,7 @@ services:
 #    env_file: env/es_hot.env
     environment:
 #      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms28g -Xmx28g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
     volumes:
       - esdata02:/usr/share/elasticsearch/data
     ulimits:
@@ -145,15 +146,15 @@ services:
       endpoint_mode: dnsrr
       mode: "replicated"
       placement:
-         constraints: [node.hostname == es-03]
+         constraints: [node.hostname == vm3]
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
-      resources:
-        limits:
-          memory: 64G
+#      resources:
+#        limits:
+#          memory: 64G
   kibana:
     image: kibana:6.8.1
     ports:
@@ -164,7 +165,7 @@ services:
     networks:
       - esnet
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -174,9 +175,9 @@ services:
 #        constraints: [node.role.manager]
 #        preferences:
 #          - spread: node.role.manager
-      resources:
-        limits:
-          memory: 8G
+#      resources:
+#        limits:
+#          memory: 8G
   logstash:
     image: logstash:6.8.1
     networks:
@@ -189,9 +190,9 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-      resources:
-        reservations:
-          memory: 16G
+#      resources:
+#        reservations:
+#          memory: 16G
 
   
   # Cerebro for managing the Elastic Cluster
@@ -202,19 +203,19 @@ services:
     networks:
       - esnet
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-        window: 120s
+        window: 40s
  # The following are maintained by HA Security Solutions 
   freq_server:
     image: hasecuritysolutions/freq_server:2.0
     networks:
       - esnet
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -231,7 +232,7 @@ services:
     networks:
       - esnet
     deploy:
-      replicas: 2
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s

@@ -1,0 +1,13 @@
+Install Docker:
+On Mac: https://hub.docker.com/editions/community/docker-ce-desktop-mac
+On Windows: https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe
+On Linux don't use packages with the machine.  use the script from get.docker.com  and pipe it to bash to setup the repositories for your distribution
+Then install Docker-compose from: https://docs.docker.com/compose/install/
+
+Docker has great documentation and examples on http://docs.docker.com
+
+On linux to test running elastic you can just clone the repository at https://github.com/HASecuritySolutions/elastic_stack.git
+
+In the readme it gives the instructions to get the elastic stack up and running pretty easily.
+
+In the presentation I will talk about getting the elastic stack up and running and do a small demo.

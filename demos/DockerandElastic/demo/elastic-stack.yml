@@ -1,0 +1,264 @@
+# Maintainer: Ben Biggs, bbiggs@campbellsci.com
+#
+# docker stack deploy -c elastic-stack.yml elastic
+# 
+# Notes on running for production: vm.max_map_count needs to be set
+# permanently to 262144 on all of the machines.
+
+version: '3.7'
+services:
+# Elasticsearch master nodes
+# Make sure that the setting discovery.zen.ping.unicast.hosts list the
+# following serivce name if using swarm.
+  master:
+    image: elasticsearch:6.8.1
+#    healthcheck:
+#      test: curl -fs http://localhost:9200/_cat/health || exit 1
+#      interval: 30s
+#      timeout: 25s
+#      retries: 3
+#      start_period: 45s
+#    environment:
+#      - bootstrap.memory_lock=true
+#      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    volumes:
+    networks:
+      - esnet
+    configs:
+      - source: master_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+    deploy:
+      replicas: 3
+#      resources:
+#        reservations:
+#          memory: 2G
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      placement:
+#        constraints: [node.role == manager]
+        preferences:
+#          - spread: node.role.manager
+          - spread: node.name
+  # Elasticsearch Coordinating Nodes
+  elasticsearch:
+    image: elasticsearch:6.8.1
+    environment:
+      - "ES_JAVA_OPTS=-Xmx1g -Xms1g"
+    networks:
+      - esnet
+    configs:
+      - source: coord_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+    deploy:
+      replicas: 1
+#      resources:
+#        reservations:
+#          memory: 2g
+      update_config:
+        parallelism: 1
+        delay: 10s 
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      mode: "replicated"
+      placement:
+        preferences:
+          - spread: node.name
+
+  # Elasticsearch Data Nodes
+  data01:
+    image: elasticsearch:6.8.1
+    container_name: esdata01
+#    healthcheck:
+#       test: curl -fs http://localhost:9200/_cat/health || exit 1
+#       interval: 30s
+#       timeout: 25s
+#       retries: 3
+#       start_period: 45s
+#    env_file: env/es_hot.env
+    environment:
+#      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+#      - "ES_JAVA_OPTS=-Xms28g -Xmx28g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+    configs:
+      - source: data_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+    deploy:
+      replicas: 1
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      placement:
+         constraints: [node.hostname == vm2]
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      resources:
+#        limits:
+#          memory: 64G
+  data02:
+    image: elasticsearch:6.8.1
+    container_name: esdata02
+#    healthcheck:
+#       test: curl -fs http://localhost:9200/_cat/health || exit 1
+#       interval: 30s
+#       timeout: 5s
+#       retries: 3
+#       start_period: 45s
+#    env_file: env/es_hot.env
+    environment:
+#      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g -XX:+UnlockDiagnosticVMOptions -XX:+PrintCompressedOopsMode"
+    volumes:
+      - esdata02:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - esnet
+    configs:
+      - source: data_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+    deploy:
+      replicas: 1
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      placement:
+         constraints: [node.hostname == vm3]
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      resources:
+#        limits:
+#          memory: 64G
+  kibana:
+    image: kibana:6.8.1
+    ports:
+      - 5601:5601
+#    environment:
+#      ELASTICSEARCH_HOSTS: http://coordinating:9200
+#    volumes:
+    networks:
+      - esnet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      placement:
+#        constraints: [node.role.manager]
+#        preferences:
+#          - spread: node.role.manager
+#      resources:
+#        limits:
+#          memory: 8G
+  logstash:
+    image: logstash:6.8.1
+    networks:
+      - esnet
+#    volumes:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      resources:
+#        reservations:
+#          memory: 16G
+
+  
+  # Cerebro for managing the Elastic Cluster
+  cerebro:
+    image: lmenezes/cerebro:0.8.4
+    ports:
+      - 9000:9000
+    networks:
+      - esnet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 40s
+ # The following are maintained by HA Security Solutions 
+  freq_server:
+    image: hasecuritysolutions/freq_server:2.0
+    networks:
+      - esnet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      placement:
+#        constraints: [node.role == worker]
+#        preferences:
+#          - spread: node.role.worker
+  domain_stats:
+    image: hasecuritysolutions/domain_stats:2.0
+    ports:
+      - 20000:20000
+    networks:
+      - esnet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+#      placement:
+#        constraints: [node.role == worker]
+#        preferences:
+#          - spread: node.role.worker
+
+
+
+networks:
+  esnet:
+    external: true
+volumes:
+  esdata01:
+  esdata02:
+
+configs:
+  master_config:
+    name: master_config
+    file: configs/master.yml
+  data_config:
+    name: data_config
+    file: configs/data.yml
+  coord_config:
+    name: coord_config
+    file: configs/coordinate.yml
